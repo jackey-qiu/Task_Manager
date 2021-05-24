@@ -38,21 +38,15 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="font">
+             <font>
+              <pointsize>14</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
             <property name="text">
              <string>Current Time</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_date">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>2021-05-23</string>
             </property>
            </widget>
           </item>
@@ -63,6 +57,13 @@
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>14</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
             </property>
             <property name="text">
              <string>00:00:00</string>
@@ -100,7 +101,14 @@
            </widget>
           </item>
           <item>
-           <widget class="QComboBox" name="comboBox"/>
+           <widget class="QComboBox" name="comboBox_task_files">
+            <property name="minimumSize">
+             <size>
+              <width>200</width>
+              <height>0</height>
+             </size>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton">
@@ -112,6 +120,19 @@
             </property>
             <property name="text">
              <string>Load</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_show_hide">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>hide/show editor</string>
             </property>
            </widget>
           </item>
@@ -153,16 +174,13 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout">
              <item>
-              <layout class="QFormLayout" name="formLayout">
+              <layout class="QGridLayout" name="gridLayout">
                <item row="0" column="0">
                 <widget class="QLabel" name="label_4">
                  <property name="text">
-                  <string>current task</string>
+                  <string>Current task</string>
                  </property>
                 </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="QLineEdit" name="lineEdit_current_task"/>
                </item>
                <item row="1" column="0">
                 <widget class="QLabel" name="label_5">
@@ -174,6 +192,23 @@
                <item row="1" column="1">
                 <widget class="QLineEdit" name="lineEdit_end"/>
                </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="label_11">
+                 <property name="text">
+                  <string>Elapsed time</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QLineEdit" name="lineEdit_task_lasting"/>
+               </item>
+               <item row="0" column="1">
+                <layout class="QHBoxLayout" name="horizontalLayout_6">
+                 <item>
+                  <widget class="QLineEdit" name="lineEdit_current_task"/>
+                 </item>
+                </layout>
+               </item>
               </layout>
              </item>
              <item>
@@ -184,14 +219,24 @@
               </widget>
              </item>
              <item>
-              <widget class="QTextEdit" name="textEdit">
+              <widget class="QTextEdit" name="textEdit_note">
                <property name="maximumSize">
                 <size>
-                 <width>16777215</width>
-                 <height>20000</height>
+                 <width>1000000</width>
+                 <height>200</height>
                 </size>
                </property>
               </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>Task details</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QTableView" name="tableView_task_details"/>
              </item>
             </layout>
            </widget>
@@ -219,6 +264,12 @@
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
            <widget class="QLabel" name="label_9">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="text">
              <string>Number of tasks</string>
             </property>
@@ -231,6 +282,32 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox_daily">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Daily task</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_init">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Init</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>
@@ -239,27 +316,21 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <item>
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_init">
+           <widget class="QLabel" name="label_12">
             <property name="text">
-             <string>Init</string>
+             <string>save_suffix</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_3">
+           <widget class="QLineEdit" name="lineEdit_suffix">
+            <property name="text">
+             <string>default</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_save">
             <property name="text">
              <string>Save</string>
             </property>

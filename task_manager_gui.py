@@ -123,6 +123,21 @@ class MyMainWindow(QMainWindow):
         self.timer_update_time.timeout.connect(self.set_time_label)
         self.timer_update_time.start(1000)
         self.pushButton_init.clicked.connect(self.init_task_table)
+        self.pushButton_show_hide.clicked.connect(self.show_or_hide_editor)
+        self.pushButton_save.clicked.connect(self.save_task_table)
+        self.comboBox_task_files.activated.connect(self.set_task_file)
+        self.load_task_files()
+        self.init_task_file()
+
+    def load_task_files(self):
+        self.comboBox_task_files.clear()
+        self.comboBox_task_files.addItems(os.listdir(os.path.join(script_path,'task_files')))
+
+    def show_or_hide_editor(self):
+        if self.frame_2.isHidden():
+            self.frame_2.show()
+        else:
+            self.frame_2.hide()
 
     def set_time_label(self):
         now = datetime.datetime.now()
@@ -132,12 +147,21 @@ class MyMainWindow(QMainWindow):
         day = now.day
         weekday = now.weekday()
         weekday_map = {0:'Monday',1:'Tuesday',2:'Wednesday',3:'Thursday',4:'Friday',5:'Saturday',6:'Sunday'}
-        self.label_date.setText('{}-{}-{}, {}'.format(year, month, day, weekday_map[weekday]))
+        # self.label_date.setText('{}-{}-{},{}'.format(year, month, day, weekday_map[weekday]))
         self.label_time.setText(time_)
         self.task_widget.update()
-        self.lineEdit_current_task.setText(self.task_widget.current_task[0])
-        self.lineEdit_end.setText(self.task_widget.task_info[self.task_widget.current_task[0]][1])
-
+        if self.task_widget.current_task[0]!=None:
+            self.lineEdit_current_task.setText(self.task_widget.current_task[0])
+            self.lineEdit_end.setText(self.task_widget.task_info[self.task_widget.current_task[0]][1])
+            begin = datetime.datetime.strptime(self.task_widget.task_info[self.task_widget.current_task[0]][0], '%H:%M')
+            end = datetime.datetime.strptime(self.task_widget.task_info[self.task_widget.current_task[0]][1], '%H:%M')
+            self.lineEdit_task_lasting.setText('{} min'.format(int(round((end-begin).total_seconds()/60,0))))
+            self.textEdit_note.setText(self.task_widget.task_info[self.task_widget.current_task[0]][-1])
+        else:
+            self.lineEdit_current_task.setText('None')
+            self.lineEdit_end.setText('None')
+            self.lineEdit_task_lasting.setText('None')
+            self.textEdit_note.setText('None')
     def init_task_table(self):
         task_labels = []
         task_notes = []
@@ -156,6 +180,60 @@ class MyMainWindow(QMainWindow):
         self.tableView_task.resizeColumnsToContents()
         self.tableView_task.setSelectionBehavior(PyQt5.QtWidgets.QAbstractItemView.SelectRows)
 
+    def save_task_table(self):
+        daily = self.checkBox_daily.isChecked()
+        lines = []
+        if daily:
+            file = 'task_file_daily_{}'.format(self.lineEdit_suffix.text())
+        else:
+            self.lineEdit_suffix.setText(self.pandas_model._data.loc[0]['date'])
+            file = 'task_file_{}'.format(self.lineEdit_suffix.text())
+        with open(os.path.join(script_path,'task_files',file),'w') as f:
+            for i in range(len(self.pandas_model._data.index)):
+                lines.append("{}+['{}','{}','{}']".format(*([f"Task {i+1}"]+self.pandas_model._data.loc[i][['begin_time','end_time','note']].tolist())))
+            f.write('\n'.join(lines))
+        self.load_task_files()
+
+    def init_task_file(self):
+        now = datetime.datetime.now()
+        date = now.strftime("%Y-%m-%d")
+        files = os.listdir(os.path.join(script_path,'task_files'))
+        file = None
+        for each in files:
+            if each.endswith(date):
+                file = each
+                break
+            else:
+                pass
+        if file == None:
+            file = 'task_file_daily_default'
+        self.comboBox_task_files.setCurrentText(file)
+        self.set_task_file()
+
+    def set_task_file(self):
+        file = os.path.join(script_path, 'task_files', self.comboBox_task_files.currentText())
+        with open(file,'r') as f:
+            lines = f.readlines()
+            task_info = {}
+            task_details = {'task_label':[],'begin_time':[],'end_time':[],'note':[]}
+            for each in lines:
+                _label, _info = each.rstrip().rsplit('+')
+                _info = eval(_info)
+                task_info[_label] = _info
+                task_details['task_label'].append(_label)
+                task_details['begin_time'].append(_info[0])
+                task_details['end_time'].append(_info[1])
+                task_details['note'].append(_info[2])
+            self.pandas_model2 = PandasModel(data = pd.DataFrame(task_details), tableviewer = self.tableView_task_details, main_gui = self)
+            self.tableView_task_details.setModel(self.pandas_model2)
+            self.tableView_task_details.resizeColumnsToContents()
+            self.tableView_task_details.setSelectionBehavior(PyQt5.QtWidgets.QAbstractItemView.SelectRows)
+                
+            self.task_widget.update_task_info(task_info)
+            # self.timer_update_time.stop()
+            # time.sleep(0.5)
+            # self.timer_update_time.start(1000)
+
 if __name__ == "__main__":
     QApplication.setStyle("windows")
     app = QApplication(sys.argv)
@@ -163,6 +241,6 @@ if __name__ == "__main__":
     screen = app.screens()[0]
     dpi = screen.physicalDotsPerInch()
     myWin = MyMainWindow()
-    #app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
     myWin.show()
     sys.exit(app.exec_())
