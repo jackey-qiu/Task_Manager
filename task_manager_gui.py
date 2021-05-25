@@ -1,6 +1,6 @@
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QCheckBox, QRadioButton, QDialog, QTableWidgetItem, QHeaderView, QAbstractItemView, QInputDialog, QDialog,QShortcut
-from PyQt5.QtCore import Qt, QTimer, QEventLoop, QThread
+from PyQt5.QtCore import Qt, QTimer, QEventLoop, QThread, QModelIndex
 from PyQt5.QtGui import QTransform, QFont, QBrush, QColor, QIcon, QImage, QPixmap
 from pyqtgraph.Qt import QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("TkAgg")
 import qdarkstyle
-import sys,os
+import sys,os,copy
 import cv2
 import logging
 import time, datetime
@@ -126,8 +126,52 @@ class MyMainWindow(QMainWindow):
         self.pushButton_show_hide.clicked.connect(self.show_or_hide_editor)
         self.pushButton_save.clicked.connect(self.save_task_table)
         self.comboBox_task_files.activated.connect(self.set_task_file)
+        self.pushButton_transfer.clicked.connect(self.transfer_data)
+        self.pushButton_insert_row.clicked.connect(self.insert_one_row)
+        self.pushButton_remove_rows.clicked.connect(self.remove_selected_rows)
         self.load_task_files()
         self.init_task_file()
+        self.init_task_table()
+
+    def transfer_data(self):
+        now = datetime.datetime.now()
+        data = copy.deepcopy(self.pandas_model2._data)
+        data['date'] = now.strftime("%Y-%m-%d") 
+        self.pandas_model = PandasModel(data = data, tableviewer = self.tableView_task, main_gui = self)
+        self.tableView_task.setModel(self.pandas_model)
+        self.tableView_task.resizeColumnsToContents()
+        self.tableView_task.setSelectionBehavior(PyQt5.QtWidgets.QAbstractItemView.SelectRows)
+
+    def insert_one_row(self):
+        if len(self.tableView_task.selectionModel().selectedRows())==0:
+            selected_row = len(self.pandas_model._data.index)-1
+        else:
+            selected_row = self.tableView_task.selectionModel().selectedRows()[0].row()
+        new_data = {}
+        for each in list(self.pandas_model._data.columns):
+            items = self.pandas_model._data[each].tolist()
+            if each=='task_label':
+                new_data[each] = items[0:selected_row] + [items[selected_row]] + ['Task {}'.format(int(each.rsplit()[-1])+1) for each in items[selected_row:]]
+            else:
+                new_data[each] = items[0:selected_row] + [items[selected_row]] + items[selected_row:]
+        self.pandas_model = PandasModel(data = pd.DataFrame(new_data), tableviewer = self.tableView_task, main_gui = self)
+        self.tableView_task.setModel(self.pandas_model)
+        self.tableView_task.resizeColumnsToContents()
+        self.tableView_task.setSelectionBehavior(PyQt5.QtWidgets.QAbstractItemView.SelectRows)
+
+    def remove_selected_rows(self):
+        selected_rows = [each.row() for each in self.tableView_task.selectionModel().selectedRows()]
+        new_data = {}
+        for each in list(self.pandas_model._data.columns):
+            items = self.pandas_model._data[each].tolist()
+            new_items = [each_item for i, each_item in enumerate(items) if i not in selected_rows]
+            if each == 'task_label':
+                new_items = ['Task {}'.format(i) for i, item in enumerate(new_items)]
+            new_data[each] = new_items
+        self.pandas_model = PandasModel(data = pd.DataFrame(new_data), tableviewer = self.tableView_task, main_gui = self)
+        self.tableView_task.setModel(self.pandas_model)
+        self.tableView_task.resizeColumnsToContents()
+        self.tableView_task.setSelectionBehavior(PyQt5.QtWidgets.QAbstractItemView.SelectRows)
 
     def load_task_files(self):
         self.comboBox_task_files.clear()
@@ -149,6 +193,8 @@ class MyMainWindow(QMainWindow):
         weekday_map = {0:'Monday',1:'Tuesday',2:'Wednesday',3:'Thursday',4:'Friday',5:'Saturday',6:'Sunday'}
         # self.label_date.setText('{}-{}-{},{}'.format(year, month, day, weekday_map[weekday]))
         self.label_time.setText(time_)
+        task_info = self.formate_task_info_from_pandas_model()
+        self.task_widget.update_task_info(task_info)
         self.task_widget.update()
         if self.task_widget.current_task[0]!=None:
             self.lineEdit_current_task.setText(self.task_widget.current_task[0])
@@ -162,6 +208,7 @@ class MyMainWindow(QMainWindow):
             self.lineEdit_end.setText('None')
             self.lineEdit_task_lasting.setText('None')
             self.textEdit_note.setText('None')
+
     def init_task_table(self):
         task_labels = []
         task_notes = []
@@ -174,7 +221,7 @@ class MyMainWindow(QMainWindow):
             begins.append('08:00')
             ends.append('12:00')
             dates.append('2021-05-23')
-        df = pd.DataFrame({'task_labels':task_labels,'begin_time':begins,'end_time':ends, 'date':dates, 'note':task_notes})
+        df = pd.DataFrame({'task_label':task_labels,'begin_time':begins,'end_time':ends, 'date':dates, 'note':task_notes})
         self.pandas_model = PandasModel(data = pd.DataFrame(df), tableviewer = self.tableView_task, main_gui = self)
         self.tableView_task.setModel(self.pandas_model)
         self.tableView_task.resizeColumnsToContents()
@@ -209,6 +256,14 @@ class MyMainWindow(QMainWindow):
             file = 'task_file_daily_default'
         self.comboBox_task_files.setCurrentText(file)
         self.set_task_file()
+
+    def formate_task_info_from_pandas_model(self):
+        raw_data = self.pandas_model2._data.to_dict('split')
+        format_data = {}
+        for i in range(len(raw_data['index'])):
+            label, *items = raw_data['data'][i]
+            format_data[label] = items
+        return format_data
 
     def set_task_file(self):
         file = os.path.join(script_path, 'task_files', self.comboBox_task_files.currentText())
