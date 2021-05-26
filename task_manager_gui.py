@@ -15,12 +15,12 @@ import matplotlib
 matplotlib.use("TkAgg")
 import qdarkstyle
 import sys,os,copy
-import cv2
+# import cv2
 import logging
 import time, datetime
 import functools
 import pandas as pd
-from pymongo import MongoClient
+# from pymongo import MongoClient
 try:
     from . import locate_path
 except:
@@ -118,6 +118,7 @@ class MyMainWindow(QMainWindow):
         #load GUI ui file made by qt designer
         ui_path = os.path.join(script_path,'task_manager.ui')
         uic.loadUi(ui_path,self)
+        self.setWindowTitle('Task manager: make your daily tasks flow as time')
         self.widget_terminal.update_name_space('main_gui',self)
         self.timer_update_time = QTimer(self)
         self.timer_update_time.timeout.connect(self.set_time_label)

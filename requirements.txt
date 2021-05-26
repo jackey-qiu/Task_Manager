@@ -1,0 +1,6 @@
+QDarkStyle==2.8.1
+matplotlib==3.3.0
+pandas==1.0.5
+numpy==1.19.0
+pyqtgraph==0.11.1
+PyQt5==5.15.4
